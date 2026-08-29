@@ -1,0 +1,8 @@
+{
+  "agent_servers": {
+    "Claude Code (Devcontainer)": {
+      "command": "/home/DEIN_USER/.local/bin/acp-wrapper-generic.sh",
+      "args": []
+    }
+  }
+}

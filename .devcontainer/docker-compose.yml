@@ -1,0 +1,27 @@
+name: PROJEKTNAME-devcontainer  # TODO: pro Projekt eindeutigen Namen setzen
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USER_UID: "${USER_UID:-1000}"
+        USER_GID: "${USER_GID:-1000}"
+    volumes:
+      - ..:/workspace:cached
+      - claude-config:/home/dev/.claude
+    command: sleep infinity
+    cap_drop: ["ALL"]
+    cap_add: ["NET_ADMIN", "NET_RAW", "SETUID", "SETGID", "AUDIT_WRITE"]
+    networks: [devnet]
+    # Projektspezifische Services und Umgebungsvariablen werden von Claude hier ergänzt,
+    # z. B.: environment, depends_on
+
+  # Projektspezifische Services (Datenbank, Cache, etc.) werden von Claude hier ergänzt.
+
+networks:
+  devnet:
+
+volumes:
+  claude-config:
