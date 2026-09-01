@@ -11,7 +11,7 @@ docker compose -f .devcontainer/docker-compose.yml exec -u root app iptables -P 
 
 echo ""
 echo "Firewall ist jetzt offen. In einem anderen Terminal jetzt z. B.:"
-echo "  ./devshell.sh"
+echo "  dvc sh"
 echo "  cd backend && ./gradlew build --refresh-dependencies"
 echo "  # oder: cd frontend && npm install <paket> --legacy-peer-deps"
 echo ""

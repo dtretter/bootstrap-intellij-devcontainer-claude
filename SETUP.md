@@ -24,11 +24,12 @@ source ~/.bashrc
 ```bash
 cp -r /pfad/zu/bootstrap/.devcontainer mein-projekt/
 cp /pfad/zu/bootstrap/BOOTSTRAP.md mein-projekt/
-cp /pfad/zu/bootstrap/add-dependency.sh /pfad/zu/bootstrap/devshell.sh mein-projekt/
+cp /pfad/zu/bootstrap/add-dependency.sh mein-projekt/
 ```
 
-`add-dependency.sh` und `devshell.sh` sind Host-Helfer und gehören ins Projekt-Wurzel-
-verzeichnis (neben `.devcontainer/`).
+`add-dependency.sh` ist ein Host-Helfer und gehört ins Projekt-Wurzelverzeichnis (neben
+`.devcontainer/`). Das `dvc`-Skript liegt dagegen global in `~/.local/bin/` (siehe
+[README.md](README.md)) und wird nicht pro Projekt kopiert.
 
 **Wenn das Projekt bereits ein `.devcontainer/` hat:** Nicht blind überschreiben. Kopiere
 das Template unter einem anderen Namen (z. B. `.devcontainer-bootstrap/`) und führe die
@@ -65,8 +66,8 @@ Firewall wird über `postStartCommand` aktiv und erlaubt zunächst nur `api.anth
 
 ## Schritt 4 — Claude die Konfiguration anpassen lassen
 
-Eine Shell im Container bekommst du vom Host aus mit `./devshell.sh` (oder direkt mit
-`docker compose -f .devcontainer/docker-compose.yml exec app bash`). Darin Claude starten:
+Eine Shell im Container bekommst du vom Host aus mit `dvc sh` (oder direkt mit
+`devcontainer exec --workspace-folder . bash`). Darin Claude starten:
 
 ```bash
 claude

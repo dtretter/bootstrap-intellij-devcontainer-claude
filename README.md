@@ -11,6 +11,10 @@ Services in die Konfiguration ein — danach einmal neu bauen, fertig.
   Details zu jeder Konfigurationsdatei und Anbindung von IntelliJ IDEA per ACP.
 - **BOOTSTRAP.md** — Anweisungen für Claude selbst; wird ins Zielprojekt kopiert und dort
   von Claude abgearbeitet.
+- **dvc** — Host-Wrapper für die `devcontainer`-CLI. Einmalig nach `~/.local/bin/` legen;
+  steuert danach in jedem Projekt den Container im aktuellen Verzeichnis (`dvc up`,
+  `dvc sh`, `dvc re`, …). Muss – anders als die übrigen Skripte – *nicht* pro Projekt
+  kopiert werden.
 
 ## Voraussetzungen
 
@@ -23,14 +27,35 @@ echo 'export USER_GID=$(id -g)' >> ~/.bashrc
 source ~/.bashrc
 ```
 
+Empfohlen: das mitgelieferte `dvc`-Skript einmalig nach `~/.local/bin/` legen (muss in
+`$PATH` sein). Es kürzt die `devcontainer`-Aufrufe ab und steuert immer den Container im
+aktuellen Verzeichnis:
+
+```bash
+install -m755 dvc ~/.local/bin/dvc
+```
+
+| Befehl | Wirkung |
+|---|---|
+| `dvc up` | Container starten (`devcontainer up --workspace-folder .`) |
+| `dvc sh` | Bash-Shell im laufenden Container öffnen |
+| `dvc re` | Container neu bauen (`--remove-existing-container`) |
+| `dvc stop` | Container zum aktuellen Verzeichnis stoppen |
+| `dvc rm` | Container stoppen und entfernen (mit Rückfrage) |
+| `dvc help` | Hilfe anzeigen |
+
+Weitere Argumente werden an `devcontainer` durchgereicht, `--workspace-folder .` wird
+automatisch ergänzt (z. B. `dvc up --build-no-cache`).
+
 ## Kurzablauf
 
 1. **Template ins Projekt kopieren** (die Skripte gehören ins Projekt-Wurzelverzeichnis,
    neben `.devcontainer/`):
    ```bash
    cp -r /pfad/zu/bootstrap/.devcontainer mein-projekt/
-   cp /pfad/zu/bootstrap/{BOOTSTRAP.md,add-dependency.sh,devshell.sh} mein-projekt/
+   cp /pfad/zu/bootstrap/{BOOTSTRAP.md,add-dependency.sh} mein-projekt/
    ```
+   (`dvc` liegt bereits global in `~/.local/bin/` und wird nicht mitkopiert.)
 
 2. **Compose-Namen setzen:** in `.devcontainer/docker-compose.yml` den Platzhalter
    `PROJEKTNAME-devcontainer` durch einen eindeutigen Namen ersetzen — sonst kollidieren
@@ -38,10 +63,10 @@ source ~/.bashrc
 
 3. **Container starten:**
    ```bash
-   cd mein-projekt && devcontainer up --workspace-folder .
+   cd mein-projekt && dvc up
    ```
 
-4. **Claude starten und beauftragen:** Shell im Container per `./devshell.sh`, darin `claude`
+4. **Claude starten und beauftragen:** Shell im Container per `dvc sh`, darin `claude`
    (beim ersten Mal Login-Flow im Browser). Claude Code lädt `BOOTSTRAP.md` **nicht**
    automatisch — weise es deshalb explizit an:
    > Analysiere das Projekt wie in BOOTSTRAP.md beschrieben und passe die Devcontainer-Konfiguration an.
@@ -51,7 +76,7 @@ source ~/.bashrc
 
 5. **Neu bauen** (auf dem Host):
    ```bash
-   devcontainer up --workspace-folder . --build-no-cache
+   dvc up --build-no-cache
    ```
    Jetzt werden die Runtimes installiert und via `postCreateCommand` die Projekt-Abhängig-
    keiten geladen. Der Container ist danach vollständig einsatzbereit.

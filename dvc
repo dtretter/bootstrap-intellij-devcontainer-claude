@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'USAGE'
+dvc — Kurzbefehle für die devcontainer-CLI im aktuellen Verzeichnis
+
+Verwendung:
+  dvc up [ARGS...]     Container starten (devcontainer up --workspace-folder .)
+  dvc sh [ARGS...]     Bash-Shell im laufenden Container öffnen
+  dvc re               Container neu bauen (--remove-existing-container)
+  dvc stop             Container zum aktuellen Verzeichnis stoppen
+  dvc rm [-y|--yes]    Container stoppen und entfernen (mit Rückfrage)
+  dvc help             Diese Hilfe anzeigen
+  dvc <cmd> [ARGS...]  Beliebiger devcontainer-Befehl, --workspace-folder . wird ergänzt
+
+Beispiele:
+  dvc up --log-level debug
+  dvc sh -c 'mvn -v'
+  dvc exec mvn test
+USAGE
+}
+
+case "${1-}" in
+  ""|help|-h|--help)  usage ;;
+  up)   devcontainer up --workspace-folder . "${@:2}" ;;
+  sh)   devcontainer exec --workspace-folder . bash "${@:2}" ;;
+  re)   devcontainer up --workspace-folder . --remove-existing-container ;;
+  stop)
+    ids="$(docker ps -q --filter "label=devcontainer.local_folder=$(pwd)")"
+    if [ -z "$ids" ]; then
+      echo "dvc: kein laufender Container für $(pwd)" >&2
+      exit 1
+    fi
+    docker stop $ids
+    ;;
+  rm)
+    assume_yes=0
+    case "${2-}" in
+      -y|--yes) assume_yes=1 ;;
+    esac
+
+    ids="$(docker ps -aq --filter "label=devcontainer.local_folder=$(pwd)")"
+    if [ -z "$ids" ]; then
+      echo "dvc: kein Container für $(pwd)" >&2
+      exit 1
+    fi
+
+    if [ "$assume_yes" -ne 1 ]; then
+      docker ps -a --filter "label=devcontainer.local_folder=$(pwd)" \
+        --format '  {{.Names}}  ({{.Status}})'
+      printf 'Container wirklich entfernen? Rebuild kann dauern. [y/N] '
+      read -r answer
+      case "$answer" in
+        y|Y|yes|Yes) ;;
+        *) echo "dvc: abgebrochen"; exit 0 ;;
+      esac
+    fi
+
+    docker rm -f $ids
+    ;;
+  *)    devcontainer "$@" --workspace-folder . ;;
+esac
