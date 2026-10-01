@@ -1,6 +1,8 @@
 FROM ubuntu:24.04
 
-ARG NODE_VERSION=20
+ARG NODE_VERSION=24
+ARG CLAUDE_CODE_VERSION=2.1.285
+ARG CLAUDE_AGENT_ACP_VERSION=0.81.2
 ARG USER_UID=1000
 ARG USER_GID=1000
 ENV DEBIAN_FRONTEND=noninteractive
@@ -10,8 +12,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         iptables ipset bubblewrap socat sudo \
     && curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - \
     && apt-get install -y nodejs \
-    && npm install -g @anthropic-ai/claude-code \
-    && npm install -g @agentclientprotocol/claude-agent-acp \
+    && npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION} \
+    && npm install -g @agentclientprotocol/claude-agent-acp@${CLAUDE_AGENT_ACP_VERSION} \
     && rm -rf /var/lib/apt/lists/*
 
 # Projektspezifische Runtimes (JDK, Python, etc.) werden von Claude nach der

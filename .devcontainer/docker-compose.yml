@@ -11,6 +11,10 @@ services:
     volumes:
       - ..:/workspace:cached
       - claude-config:/home/dev/.claude
+    environment:
+      # Langlebiger OAuth-Token vom Host (per `claude setup-token` erzeugt).
+      # Wert kommt aus .devcontainer/.env (gitignored) oder der Host-Umgebung.
+      CLAUDE_CODE_OAUTH_TOKEN: "${CLAUDE_CODE_OAUTH_TOKEN:-}"
     command: sleep infinity
     cap_drop: ["ALL"]
     cap_add: ["NET_ADMIN", "NET_RAW", "SETUID", "SETGID", "AUDIT_WRITE"]

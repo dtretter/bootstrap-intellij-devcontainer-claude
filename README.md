@@ -66,15 +66,23 @@ automatisch ergänzt (z. B. `dvc up --build-no-cache`).
    cd mein-projekt && dvc up
    ```
 
-4. **Claude starten und beauftragen:** Shell im Container per `dvc sh`, darin `claude`
-   (beim ersten Mal Login-Flow im Browser). Claude Code lädt `BOOTSTRAP.md` **nicht**
-   automatisch — weise es deshalb explizit an:
+4. **Authentifizieren (empfohlen: Setup-Token vom Host):** Einmalig auf dem Host
+   `claude setup-token` ausführen (öffnet den Browser, setzt Pro/Max/Team/Enterprise
+   voraus) und den ausgegebenen Token in `.devcontainer/.env` eintragen
+   (Vorlage: `.devcontainer/.env.example`, ist gitignored). Compose reicht ihn als
+   `CLAUDE_CODE_OAUTH_TOKEN` in den Container — kein In-Container-Login, kein
+   unzuverlässiger OAuth-Refresh. Alternativ der klassische Weg: im Container `claude`
+   starten und den Browser-Login durchführen.
+
+5. **Claude beauftragen:** Shell im Container per `dvc sh`, darin `claude`. Claude Code
+   lädt `BOOTSTRAP.md` **nicht** automatisch — weise es deshalb explizit an:
    > Analysiere das Projekt wie in BOOTSTRAP.md beschrieben und passe die Devcontainer-Konfiguration an.
 
    Claude trägt Runtimes, Services, `postCreateCommand`, `forwardPorts` und Firewall-Regeln
-   in die vier Konfigurationsdateien ein — ohne selbst zu bauen oder zu installieren.
+   in die vier Konfigurationsdateien ein und legt in der `CLAUDE.md` Hinweise zu Firewall
+   und `WebFetch` an — ohne selbst zu bauen oder zu installieren.
 
-5. **Neu bauen** (auf dem Host):
+6. **Neu bauen** (auf dem Host):
    ```bash
    dvc up --build-no-cache
    ```

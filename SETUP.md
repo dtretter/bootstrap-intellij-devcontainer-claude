@@ -61,35 +61,77 @@ devcontainer up --workspace-folder .
 ```
 
 Das baut das minimale Image (Ubuntu + Node + Claude Code) und startet den Container. Die
-Firewall wird über `postStartCommand` aktiv und erlaubt zunächst nur `api.anthropic.com`,
-`github.com` und `codeload.github.com` — genug, damit Claude arbeiten kann.
+Firewall wird über `postStartCommand` aktiv (Default-Deny-Egress) und erlaubt zunächst nur:
+
+- `api.anthropic.com` — Claude-API
+- `claude.ai`, `platform.claude.com`, `console.anthropic.com` — OAuth-Login/-Refresh
+  (nur für den In-Container-Login nötig; siehe Hinweis in Schritt 4)
+- `github.com`, `codeload.github.com`
+
+Das genügt, damit Claude arbeiten kann. Weitere Hosts trägt Claude bei Bedarf als
+`allow_host <host>` in `init-firewall.sh` ein.
 
 ## Schritt 4 — Claude die Konfiguration anpassen lassen
 
-Eine Shell im Container bekommst du vom Host aus mit `dvc sh` (oder direkt mit
-`devcontainer exec --workspace-folder . bash`). Darin Claude starten:
+**Authentifizierung — empfohlen: Setup-Token vom Host.** Statt sich im Container
+interaktiv einzuloggen, wird ein langlebiger OAuth-Token vom Host injiziert:
+
+1. Auf dem Host (mit Browser) einmalig ausführen:
+   ```bash
+   claude setup-token
+   ```
+   Der OAuth-Flow gibt einen ~12 Monate gültigen Token (`sk-ant-oat01-…`) aus — **nur
+   einmal sichtbar**, setzt ein Pro/Max/Team/Enterprise-Abo voraus.
+2. Token in `.devcontainer/.env` eintragen (Vorlage kopieren, Datei ist gitignored,
+   niemals committen):
+   ```bash
+   cp .devcontainer/.env.example .devcontainer/.env
+   # CLAUDE_CODE_OAUTH_TOKEN=... eintragen
+   ```
+3. Container (neu) starten (`dvc up` / `dvc re`). Compose reicht den Wert als
+   `CLAUDE_CODE_OAUTH_TOKEN` in den Container (`docker-compose.yml`).
+
+Das vermeidet den unzuverlässigen In-Container-OAuth-Refresh und erspart wiederholte
+Logins. Bei gesetztem Token werden `claude.ai`/`platform.claude.com`/
+`console.anthropic.com` in der Firewall nicht mehr gebraucht und können aus
+`init-firewall.sh` entfernt werden (nur `api.anthropic.com` bleibt nötig).
+
+**Umstieg von einem bestehenden In-Container-Login:** Die alten Credentials liegen im
+`claude-config`-Volume und würden sonst parallel weiterexistieren. Einmal löschen und den
+Container neu starten — läuft Claude danach weiter, authentifiziert es ausschließlich über
+den Token:
+
+```bash
+dvc sh -c 'rm -f ~/.claude/.credentials.json'
+dvc re
+```
+
+**Alternativ (klassischer In-Container-Login).** Eine Shell im Container vom Host aus mit
+`dvc sh` (oder `devcontainer exec --workspace-folder . bash`), darin Claude starten:
 
 ```bash
 claude
 ```
 
 Beim ersten Start den Login-Flow durchführen; das Token landet im isolierten
-`claude-config`-Volume, nicht im Host-Home.
+`claude-config`-Volume, nicht im Host-Home. Dieser Weg benötigt die OAuth-Hosts in der
+Firewall (siehe Schritt 3) und ist auf einen funktionierenden Token-Refresh angewiesen.
 
 Claude Code lädt `BOOTSTRAP.md` **nicht** automatisch. Weise Claude nach dem Start explizit an:
 
 > Analysiere das Projekt wie in BOOTSTRAP.md beschrieben und passe die Devcontainer-Konfiguration an.
 
 Claude liest die vorhandenen Projektdateien (`build.gradle.kts`, `package.json`, `pom.xml`,
-`requirements.txt`, projektinterne `docker-compose.yml`, …) und trägt in die vier
-Template-Dateien ein:
+`requirements.txt`, projektinterne `docker-compose.yml`, …) und passt die vier
+Template-Dateien sowie die `CLAUDE.md` an:
 
 | Datei | Was Claude ergänzt |
 |---|---|
 | `Dockerfile` | Basis-Image oder Runtime-Installation (JDK, Python, …) |
 | `docker-compose.yml` | Services (DB, Cache, …), Umgebungsvariablen |
 | `devcontainer.json` | `postCreateCommand`, `forwardPorts` |
-| `init-firewall.sh` | Firewall-Regeln für interne Services |
+| `init-firewall.sh` | Firewall-Regeln für interne Services; OAuth-Hosts entfernen, wenn per Setup-Token authentifiziert |
+| `CLAUDE.md` (Projektwurzel) | Abschnitt zu Firewall/`WebFetch` — neu angelegt oder nur dieser Abschnitt aktualisiert |
 
 Claude führt dabei **keine Builds oder Installationen** aus — nur Konfigurationsdateien
 bearbeiten. Am Ende nennt Claude den Rebuild-Befehl für Schritt 5.

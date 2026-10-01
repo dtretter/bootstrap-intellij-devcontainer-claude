@@ -25,6 +25,9 @@ allow_host() {
 }
 
 allow_host api.anthropic.com
+allow_host claude.ai             # OAuth-Login (Account-Authentifizierung)
+allow_host platform.claude.com  # OAuth Token-Austausch/-Refresh/-Revoke (ersetzt console.anthropic.com)
+allow_host console.anthropic.com # Legacy-Fallback fuer OAuth
 allow_host github.com
 allow_host codeload.github.com
 
