@@ -1,2 +1,4 @@
 /.idea/
-/.devcontainer/.env
+.env
+.env.*
+!.env.example
