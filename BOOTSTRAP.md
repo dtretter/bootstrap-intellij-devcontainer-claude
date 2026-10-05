@@ -69,18 +69,29 @@ volumes:
 
 ## Schritt 4 — `.devcontainer/devcontainer.json` anpassen
 
-- `postCreateCommand`: Dependency-Bootstrap-Befehl(e) eintragen
+- `postCreateCommand`: Weiteren benannten Eintrag im `postCreateCommand`-Objekt ergänzen;
+  den Eintrag `claude-onboarding` nicht entfernen (er sorgt dafür, dass die interaktive
+  `claude`-CLI bei gesetztem `CLAUDE_CODE_OAUTH_TOKEN` ohne Login startet)
 - `forwardPorts`: Ports der Anwendung eintragen
 - `name`: Sinnvollen Namen setzen
 
-Beispiele für `postCreateCommand`:
-- Gradle: `"cd backend && ./gradlew build || echo 'fehlgeschlagen'"`
-- Maven: `"cd backend && ./mvnw package -DskipTests || echo 'fehlgeschlagen'"`
-- npm: `"cd frontend && npm install --legacy-peer-deps || echo 'fehlgeschlagen'"`
-- Kombiniert: `"(cd backend && ./gradlew build || echo 'Backend fehlgeschlagen') ; (cd frontend && npm install || echo 'Frontend fehlgeschlagen')"`
+Beispiele für Einträge im `postCreateCommand`-Objekt:
+- Gradle: `"deps": "cd backend && ./gradlew build || echo 'fehlgeschlagen'"`
+- Maven: `"deps": "cd backend && ./mvnw package -DskipTests || echo 'fehlgeschlagen'"`
+- npm: `"deps": "cd frontend && npm install --legacy-peer-deps || echo 'fehlgeschlagen'"`
+- Kombiniert: `"deps": "(cd backend && ./gradlew build || echo 'Backend fehlgeschlagen') ; (cd frontend && npm install || echo 'Frontend fehlgeschlagen')"`
 
-Wichtig: Schritte mit `( ... || echo ... ) ; ( ... || echo ... )` verketten, damit ein
-fehlgeschlagener Schritt den nächsten nicht blockiert.
+Ergebnis, z. B.:
+```jsonc
+"postCreateCommand": {
+  "claude-onboarding": "…unverändert lassen…",
+  "deps": "cd backend && ./gradlew build || echo 'fehlgeschlagen'"
+}
+```
+
+Wichtig: Die Einträge im Objekt laufen **parallel**. Wer eine Reihenfolge braucht, verkettet
+die Befehle innerhalb **eines** Eintrags mit `( ... || echo ... ) ; ( ... || echo ... )`,
+damit ein fehlgeschlagener Schritt den nächsten nicht blockiert.
 
 ## Schritt 5 — `.devcontainer/init-firewall.sh` anpassen
 

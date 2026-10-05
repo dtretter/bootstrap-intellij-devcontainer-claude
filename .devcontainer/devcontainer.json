@@ -7,6 +7,13 @@
   "containerEnv": {
     "CLAUDE_CONFIG_DIR": "/home/dev/.claude"
   },
-  "postStartCommand": "sudo /usr/local/bin/init-firewall.sh"
-  // postCreateCommand und forwardPorts werden von Claude nach der Analyse eingetragen.
+  "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
+  // Benannte Einträge laufen parallel; Reihenfolge nur innerhalb eines Eintrags.
+  "postCreateCommand": {
+    // Nur mit CLAUDE_CODE_OAUTH_TOKEN: Onboarding als erledigt markieren, sonst zeigt die
+    // interaktive CLI trotz Token den Login. Ohne Token bleibt der normale Login erhalten.
+    "claude-onboarding": "if [ -n \"$CLAUDE_CODE_OAUTH_TOKEN\" ]; then node -e \"const fs=require('fs'),f=process.env.CLAUDE_CONFIG_DIR+'/.claude.json';let d={};try{d=JSON.parse(fs.readFileSync(f))}catch{};d.hasCompletedOnboarding=true;fs.writeFileSync(f,JSON.stringify(d,null,2))\"; fi"
+    // Projektspezifische Bootstrap-Befehle werden von Claude hier als weitere Einträge ergänzt.
+  }
+  // forwardPorts wird von Claude nach der Analyse eingetragen.
 }

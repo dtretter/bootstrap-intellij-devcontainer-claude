@@ -35,6 +35,9 @@ vom Host** injiziert:
    (`docker-compose.yml`). Danach `dvc up` / `dvc re`.
 
 Damit entfällt der In-Container-Login und der unzuverlässige OAuth-Refresh komplett.
+Damit die interaktive `claude`-CLI dabei nicht trotzdem den Login zeigt, setzt der
+`postCreateCommand`-Eintrag `claude-onboarding` in `devcontainer.json` bei gesetztem Token
+`hasCompletedOnboarding` in `$CLAUDE_CONFIG_DIR/.claude.json` (nicht entfernen).
 Bei gesetztem `CLAUDE_CODE_OAUTH_TOKEN` werden `claude.ai`/`platform.claude.com`/
 `console.anthropic.com` in der Firewall nicht mehr gebraucht — sie können dann aus
 `init-firewall.sh` entfernt werden (nur `api.anthropic.com` bleibt nötig). Erst wenn

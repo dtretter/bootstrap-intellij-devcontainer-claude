@@ -71,7 +71,8 @@ automatisch ergänzt (z. B. `dvc up --build-no-cache`).
    voraus) und den ausgegebenen Token in `.devcontainer/.env` eintragen
    (Vorlage: `.devcontainer/.env.example`, ist gitignored). Compose reicht ihn als
    `CLAUDE_CODE_OAUTH_TOKEN` in den Container — kein In-Container-Login, kein
-   unzuverlässiger OAuth-Refresh. Alternativ der klassische Weg: im Container `claude`
+   unzuverlässiger OAuth-Refresh (das Onboarding der interaktiven CLI wird dabei per
+   `postCreateCommand` automatisch übersprungen). Alternativ der klassische Weg: im Container `claude`
    starten und den Browser-Login durchführen.
 
 5. **Claude beauftragen:** Shell im Container per `dvc sh`, darin `claude`. Claude Code

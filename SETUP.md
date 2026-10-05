@@ -89,7 +89,10 @@ interaktiv einzuloggen, wird ein langlebiger OAuth-Token vom Host injiziert:
    # CLAUDE_CODE_OAUTH_TOKEN=... eintragen
    ```
 3. Container (neu) starten (`dvc up` / `dvc re`). Compose reicht den Wert als
-   `CLAUDE_CODE_OAUTH_TOKEN` in den Container (`docker-compose.yml`).
+   `CLAUDE_CODE_OAUTH_TOKEN` in den Container (`docker-compose.yml`). Beim Erstellen
+   des Containers markiert der `postCreateCommand`-Eintrag `claude-onboarding` in
+   `devcontainer.json` das Onboarding als erledigt — sonst zeigt die interaktive
+   `claude`-CLI trotz Token den Login-Bildschirm. Ohne Token passiert dabei nichts.
 
 Das vermeidet den unzuverlässigen In-Container-OAuth-Refresh und erspart wiederholte
 Logins. Bei gesetztem Token werden `claude.ai`/`platform.claude.com`/
@@ -129,7 +132,7 @@ Template-Dateien sowie die `CLAUDE.md` an:
 |---|---|
 | `Dockerfile` | Basis-Image oder Runtime-Installation (JDK, Python, …) |
 | `docker-compose.yml` | Services (DB, Cache, …), Umgebungsvariablen |
-| `devcontainer.json` | `postCreateCommand`, `forwardPorts` |
+| `devcontainer.json` | weitere `postCreateCommand`-Einträge (neben `claude-onboarding`), `forwardPorts` |
 | `init-firewall.sh` | Firewall-Regeln für interne Services; OAuth-Hosts entfernen, wenn per Setup-Token authentifiziert |
 | `CLAUDE.md` (Projektwurzel) | Abschnitt zu Firewall/`WebFetch` — neu angelegt oder nur dieser Abschnitt aktualisiert |
 
