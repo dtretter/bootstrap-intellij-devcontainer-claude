@@ -19,6 +19,33 @@ echo 'export USER_GID=$(id -g)' >> ~/.bashrc
 source ~/.bashrc
 ```
 
+`docker-compose.yml` übergibt die Werte als Build-Args (`${USER_UID:-1000}`) an das
+Dockerfile, das damit den User `dev` anlegt. Woher die Werte kommen dürfen:
+
+- **Shell-Profil** wie oben. Unter zsh entsprechend `~/.zshrc`, bei anderen Shells deren
+  Startdatei. Wichtig: Die Variablen müssen in der Shell gesetzt sein, aus der `dvc` bzw.
+  `devcontainer` gestartet wird — eine IDE, die vom Desktop statt aus dem Terminal
+  gestartet wurde, liest `~/.bashrc` u. U. nicht.
+- **`.devcontainer/.env`** (gitignored, gleiche Datei wie für den OAuth-Token, siehe
+  `.env.example`). Dort sind nur feste Zahlen möglich, keine `$(id -u)`:
+  ```bash
+  echo "USER_UID=$(id -u)" >> .devcontainer/.env
+  echo "USER_GID=$(id -g)" >> .devcontainer/.env
+  ```
+  Unabhängig von Shell und Startweg; eine in der Umgebung gesetzte Variable hat aber
+  Vorrang.
+
+**Fehlen beide, wird ohne Warnung 1000 verwendet.** Bei Host-UID 1000 (typisch für den
+ersten User unter Linux) fällt das nicht auf; sonst gehören im Container angelegte Dateien
+auf dem Host einem fremden User. Prüfen:
+
+```bash
+echo "$USER_UID:$USER_GID"   # auf dem Host, sollte $(id -u):$(id -g) entsprechen
+dvc sh -c id                 # im Container, uid/gid von dev
+```
+
+Da UID/GID beim Image-Build eingebrannt werden, greift eine Änderung erst nach `dvc re`.
+
 ## Schritt 1 — Template ins Projekt kopieren
 
 ```bash

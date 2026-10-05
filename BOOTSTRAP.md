@@ -16,6 +16,15 @@ Lies die relevanten Konfigurationsdateien (soweit vorhanden):
 - `Dockerfile` (projektintern, falls vorhanden) → Basis-Image, Ports
 - `README.md` → Hinweise zu Build-Befehlen und Abhängigkeiten
 
+Außerdem prüfen, ob der Container-User `dev` die UID/GID des Host-Users hat. Der Bind-Mount
+`/workspace` zeigt den Host-Eigentümer, beide Zeilen müssen übereinstimmen:
+```bash
+echo "$(id -u) $(id -g)"
+stat -c '%u %g' /workspace
+```
+Weichen sie ab, fehlen auf dem Host `USER_UID`/`USER_GID` (Compose fällt dann still auf
+1000 zurück) — im Container nicht behebbar, in Schritt 7 melden.
+
 ## Schritt 2 — `.devcontainer/Dockerfile` anpassen
 
 Trage die benötigten Runtimes ein. Füge sie **vor** dem User-Setup-Block ein (vor dem zweiten `RUN`-Block).
@@ -30,6 +39,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends wget \
     ...
 ```
 Besser: Das `FROM ubuntu:24.04` durch ein passendes Basis-Image ersetzen, z. B. `FROM eclipse-temurin:21-jdk`.
+Die `ARG USER_UID`/`USER_GID` und den User-Setup-Block dabei unverändert übernehmen — sie
+sorgen dafür, dass Workspace-Dateien dem Host-User gehören.
 
 **Python:**
 ```dockerfile
@@ -159,3 +170,6 @@ Wenn du alle Dateien angepasst hast, teile dem Benutzer mit:
    devcontainer up --workspace-folder . --build-no-cache
    ```
 3. Falls nötig: was du nicht automatisch ermitteln konntest und manuell geklärt werden muss
+4. Falls die UID/GID-Prüfung aus Schritt 1 abweicht: `USER_UID`/`USER_GID` auf dem Host
+   setzen (Shell-Profil oder `.devcontainer/.env`, siehe SETUP.md „Voraussetzungen") —
+   vor dem Rebuild, sonst wird wieder mit 1000 gebaut

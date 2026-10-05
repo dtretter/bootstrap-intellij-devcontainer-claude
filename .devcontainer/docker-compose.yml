@@ -6,6 +6,10 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
+        # UID/GID des Host-Users, damit Dateien im gemounteten Workspace ihm gehören.
+        # Kommen aus der Host-Umgebung (z. B. `export USER_UID=$(id -u)` in ~/.bashrc)
+        # oder aus .devcontainer/.env. Fehlen sie, wird STILL 1000 verwendet.
+        # Änderungen greifen erst nach Rebuild (`dvc re`).
         USER_UID: "${USER_UID:-1000}"
         USER_GID: "${USER_GID:-1000}"
     volumes:

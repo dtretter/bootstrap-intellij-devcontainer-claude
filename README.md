@@ -27,6 +27,10 @@ echo 'export USER_GID=$(id -g)' >> ~/.bashrc
 source ~/.bashrc
 ```
 
+Alternativ (zsh: `~/.zshrc`) oder ohne Shell-Profil in `.devcontainer/.env` eintragen —
+Details in [SETUP.md](SETUP.md#voraussetzungen). Fehlen die Variablen, wird **still**
+UID/GID 1000 verwendet.
+
 Empfohlen: das mitgelieferte `dvc`-Skript einmalig nach `~/.local/bin/` legen (muss in
 `$PATH` sein). Es kürzt die `devcontainer`-Aufrufe ab und steuert immer den Container im
 aktuellen Verzeichnis:

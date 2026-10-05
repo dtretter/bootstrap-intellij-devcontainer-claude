@@ -44,6 +44,15 @@ Bei gesetztem `CLAUDE_CODE_OAUTH_TOKEN` werden `claude.ai`/`platform.claude.com`
 Claude nach ~12 Monaten wieder nach Login fragt: `setup-token` erneut ausführen und
 `.env` aktualisieren.
 
+## UID/GID des Container-Users
+
+Der User `dev` wird beim Image-Build mit `USER_UID`/`USER_GID` angelegt; `docker-compose.yml`
+liest sie aus der **Host**-Umgebung (`~/.bashrc`/`~/.zshrc`) oder aus `.devcontainer/.env`,
+Fallback still `1000`. Sind die Variablen auf dem Host nicht gesetzt und weicht die Host-UID
+ab, gehören im Workspace angelegte Dateien auf dem Host einem fremden User. Im Container
+nicht korrigierbar (kein `chown` nach außen) — stattdessen dem Nutzer raten, die Variablen
+wie in `SETUP.md` (Abschnitt „Voraussetzungen") zu setzen und mit `dvc re` neu zu bauen.
+
 ## Versionierung der Toolchain
 
 Node, Claude Code und Claude Agent ACP sind in `.devcontainer/Dockerfile` über `ARG`s gepinnt
