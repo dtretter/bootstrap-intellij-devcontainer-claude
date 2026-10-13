@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Neuere Compose-Versionen bauen immer per buildx bake (COMPOSE_BAKE=false wird ignoriert);
+# bake verweigert das Dockerfile-with-features der devcontainer-CLI (liegt in /tmp,
+# außerhalb des Build-Kontexts) ohne --allow=fs.read. Die fs-Entitlement-Prüfung von bake
+# abschalten; per BUILDX_BAKE_ENTITLEMENTS_FS=1 in der Umgebung überschreibbar.
+export BUILDX_BAKE_ENTITLEMENTS_FS="${BUILDX_BAKE_ENTITLEMENTS_FS:-0}"
+
 usage() {
   cat <<'USAGE'
 dvc — Kurzbefehle für die devcontainer-CLI im aktuellen Verzeichnis
