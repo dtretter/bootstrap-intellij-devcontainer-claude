@@ -12,6 +12,12 @@ usage() {
 dvc — Kurzbefehle für die devcontainer-CLI im aktuellen Verzeichnis
 
 Verwendung:
+  dvc [-c NAME] <cmd>  -c NAME: Konfiguration .devcontainer/NAME/devcontainer.json
+                       statt .devcontainer/devcontainer.json (z. B. -c https);
+                       -c default erzwingt die Standardkonfiguration.
+                       Vorgabe ohne -c: Umgebungsvariable DVC_CONFIG, sonst "https"
+                       (fehlt die Konfiguration im Projekt, gilt die Standardkonfiguration).
+
   dvc up [ARGS...]     Container starten (devcontainer up --workspace-folder .)
   dvc sh [ARGS...]     Bash-Shell im laufenden Container öffnen
   dvc re               Container neu bauen (--remove-existing-container)
@@ -24,13 +30,47 @@ Beispiele:
   dvc up --log-level debug
   dvc sh -c 'mvn -v'
   dvc exec mvn test
+  dvc -c default re
+  DVC_CONFIG=default dvc sh
 USAGE
 }
+
+# Konfigurationsauswahl: -c NAME vor dem Befehl, sonst Vorgabe aus DVC_CONFIG, sonst
+# "https". NAME steht fuer .devcontainer/NAME/devcontainer.json, "default" fuer
+# .devcontainer/devcontainer.json. Fehlt die Vorgabe im Projekt, gilt still die
+# Standardkonfiguration; fehlt eine ausdruecklich per -c verlangte, bricht dvc ab. Die
+# devcontainer-CLI findet einen laufenden Container ueber Ordner UND Konfigurationsdatei -
+# daher gilt --config fuer alle devcontainer-Befehle, nicht nur fuer up/re.
+config_name="${DVC_CONFIG-https}"
+config_explicit=0
+if [ "${1-}" = "-c" ] || [ "${1-}" = "--config" ]; then
+  if [ -z "${2-}" ]; then
+    echo "dvc: $1 braucht einen Konfigurationsnamen (z. B. https, default)" >&2
+    exit 1
+  fi
+  config_name="$2"
+  config_explicit=1
+  shift 2
+fi
+
+# Expansion als ${config_args[@]+"${config_args[@]}"}: bash < 4.4 (macOS: 3.2) meldet
+# bei leerem Array unter set -u sonst "unbound variable".
+config_args=()
+if [ -n "$config_name" ] && [ "$config_name" != "default" ]; then
+  config_file=".devcontainer/$config_name/devcontainer.json"
+  if [ -f "$config_file" ]; then
+    config_args=(--config "$config_file")
+  elif [ "$config_explicit" -eq 1 ]; then
+    echo "dvc: $config_file nicht gefunden" >&2
+    exit 1
+  fi
+fi
 
 # docker ps (mit den übergebenen Argumenten) über alle Container zum aktuellen Verzeichnis.
 # Das devcontainer-Label trägt nur der Haupt-Service; weitere Compose-Services (DB, Mail, …)
 # werden über das Compose-Projekt-Label des Haupt-Containers gefunden. Auch ein bereits
 # gestoppter Haupt-Container zählt, damit noch laufende Sidecars erfasst werden.
+# Unabhängig von der Konfigurationsauswahl: erfasst Container aller Konfigurationen.
 project_ps() {
   local folder_filter="label=devcontainer.local_folder=$(pwd)" main_ids project
   main_ids="$(docker ps -aq --filter "$folder_filter")"
@@ -47,9 +87,9 @@ project_ps() {
 
 case "${1-}" in
   ""|help|-h|--help)  usage ;;
-  up)   devcontainer up --workspace-folder . "${@:2}" ;;
-  sh)   devcontainer exec --workspace-folder . bash "${@:2}" ;;
-  re)   devcontainer up --workspace-folder . --remove-existing-container ;;
+  up)   devcontainer up --workspace-folder . ${config_args[@]+"${config_args[@]}"} "${@:2}" ;;
+  sh)   devcontainer exec --workspace-folder . ${config_args[@]+"${config_args[@]}"} bash "${@:2}" ;;
+  re)   devcontainer up --workspace-folder . ${config_args[@]+"${config_args[@]}"} --remove-existing-container ;;
   stop)
     ids="$(project_ps -q)"
     if [ -z "$ids" ]; then
@@ -82,5 +122,7 @@ case "${1-}" in
 
     docker rm -f $ids
     ;;
-  *)    devcontainer "$@" --workspace-folder . ;;
+  # Optionen direkt hinter den Unterbefehl: bei exec/run-user-commands o. ä. gehört alles
+  # nach dem auszuführenden Befehl diesem Befehl, nicht der devcontainer-CLI.
+  *)    devcontainer "$1" --workspace-folder . ${config_args[@]+"${config_args[@]}"} "${@:2}" ;;
 esac
