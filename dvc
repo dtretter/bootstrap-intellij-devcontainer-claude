@@ -15,8 +15,8 @@ Verwendung:
   dvc up [ARGS...]     Container starten (devcontainer up --workspace-folder .)
   dvc sh [ARGS...]     Bash-Shell im laufenden Container öffnen
   dvc re               Container neu bauen (--remove-existing-container)
-  dvc stop             Container zum aktuellen Verzeichnis stoppen
-  dvc rm [-y|--yes]    Container stoppen und entfernen (mit Rückfrage)
+  dvc stop             Alle Container (inkl. Compose-Services) zum aktuellen Verzeichnis stoppen
+  dvc rm [-y|--yes]    Alle Container stoppen und entfernen (mit Rückfrage, Volumes bleiben)
   dvc help             Diese Hilfe anzeigen
   dvc <cmd> [ARGS...]  Beliebiger devcontainer-Befehl, --workspace-folder . wird ergänzt
 
@@ -27,13 +27,31 @@ Beispiele:
 USAGE
 }
 
+# docker ps (mit den übergebenen Argumenten) über alle Container zum aktuellen Verzeichnis.
+# Das devcontainer-Label trägt nur der Haupt-Service; weitere Compose-Services (DB, Mail, …)
+# werden über das Compose-Projekt-Label des Haupt-Containers gefunden. Auch ein bereits
+# gestoppter Haupt-Container zählt, damit noch laufende Sidecars erfasst werden.
+project_ps() {
+  local folder_filter="label=devcontainer.local_folder=$(pwd)" main_ids project
+  main_ids="$(docker ps -aq --filter "$folder_filter")"
+  {
+    docker ps "$@" --filter "$folder_filter"
+    if [ -n "$main_ids" ]; then
+      for project in $(docker inspect \
+          --format '{{index .Config.Labels "com.docker.compose.project"}}' $main_ids | sort -u); do
+        docker ps "$@" --filter "label=com.docker.compose.project=$project"
+      done
+    fi
+  } | sort -u
+}
+
 case "${1-}" in
   ""|help|-h|--help)  usage ;;
   up)   devcontainer up --workspace-folder . "${@:2}" ;;
   sh)   devcontainer exec --workspace-folder . bash "${@:2}" ;;
   re)   devcontainer up --workspace-folder . --remove-existing-container ;;
   stop)
-    ids="$(docker ps -q --filter "label=devcontainer.local_folder=$(pwd)")"
+    ids="$(project_ps -q)"
     if [ -z "$ids" ]; then
       echo "dvc: kein laufender Container für $(pwd)" >&2
       exit 1
@@ -46,15 +64,14 @@ case "${1-}" in
       -y|--yes) assume_yes=1 ;;
     esac
 
-    ids="$(docker ps -aq --filter "label=devcontainer.local_folder=$(pwd)")"
+    ids="$(project_ps -aq)"
     if [ -z "$ids" ]; then
       echo "dvc: kein Container für $(pwd)" >&2
       exit 1
     fi
 
     if [ "$assume_yes" -ne 1 ]; then
-      docker ps -a --filter "label=devcontainer.local_folder=$(pwd)" \
-        --format '  {{.Names}}  ({{.Status}})'
+      project_ps -a --format '  {{.Names}}  ({{.Status}})'
       printf 'Container wirklich entfernen? Rebuild kann dauern. [y/N] '
       read -r answer
       case "$answer" in

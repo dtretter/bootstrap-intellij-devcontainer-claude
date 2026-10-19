@@ -44,8 +44,8 @@ install -m755 dvc ~/.local/bin/dvc
 | `dvc up` | Container starten (`devcontainer up --workspace-folder .`) |
 | `dvc sh` | Bash-Shell im laufenden Container öffnen |
 | `dvc re` | Container neu bauen (`--remove-existing-container`) |
-| `dvc stop` | Container zum aktuellen Verzeichnis stoppen |
-| `dvc rm` | Container stoppen und entfernen (mit Rückfrage) |
+| `dvc stop` | Alle Container (inkl. weiterer Compose-Services) zum aktuellen Verzeichnis stoppen |
+| `dvc rm` | Alle Container stoppen und entfernen (mit Rückfrage; Volumes bleiben erhalten) |
 | `dvc help` | Hilfe anzeigen |
 
 Weitere Argumente werden an `devcontainer` durchgereicht, `--workspace-folder .` wird
