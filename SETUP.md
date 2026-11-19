@@ -8,6 +8,33 @@ additiv daneben gelegt und darf Vorhandenes nicht überschreiben.
 Der Ablauf: Template kopieren → Compose-Namen setzen → Container starten → Claude die
 Konfiguration anpassen lassen → einmal neu bauen. Optional: IDE per ACP anbinden.
 
+## TL;DR
+
+Voraussetzung: `USER_UID`/`USER_GID` gesetzt, `dvc` liegt in `~/.local/bin/` (siehe
+[Voraussetzungen](#voraussetzungen) und [README.md](README.md)).
+
+```bash
+# 1+2. Template kopieren und Compose-Namen setzen (bricht ab, wenn .devcontainer/ existiert)
+/pfad/zu/bootstrap/setup.sh mein-projekt
+cd mein-projekt
+
+# 3. Auth: Token auf dem Host erzeugen und eintragen
+claude setup-token
+cp .devcontainer/.env.example .devcontainer/.env   # CLAUDE_CODE_OAUTH_TOKEN=... eintragen
+
+# 4. Container starten, Claude die Konfiguration anpassen lassen
+dvc up
+dvc sh
+claude   # → "Analysiere das Projekt wie in BOOTSTRAP.md beschrieben und passe die Devcontainer-Konfiguration an."
+
+# 5. Auf dem Host neu bauen
+dvc up --build-no-cache
+```
+
+Danach `.devcontainer/` einchecken (ohne `.env`) und `BOOTSTRAP.md` löschen. Details und
+Sonderfälle (bestehendes `.devcontainer/`, eigene Projekt-Compose, In-Container-Login) in
+den Schritten unten.
+
 ## Voraussetzungen
 
 Docker und die `devcontainer` CLI installiert, `USER_UID`/`USER_GID` in `~/.bashrc` gesetzt
@@ -48,10 +75,29 @@ Da UID/GID beim Image-Build eingebrannt werden, greift eine Änderung erst nach 
 
 ## Schritt 1 — Template ins Projekt kopieren
 
+Das Skript `setup.sh` (im `bootstrap`-Ordner, läuft auf dem Host) erledigt Schritt 1 und 2:
+
+```bash
+/pfad/zu/bootstrap/setup.sh mein-projekt [compose-name]
+```
+
+Es kopiert `.devcontainer/`, `BOOTSTRAP.md` und `add-dependency.sh` ins Projekt und setzt
+den Compose-Namen (Vorgabe: `<verzeichnisname>-devcontainer`). Dabei gilt:
+
+- **Existiert im Projekt bereits `.devcontainer/`** (oder `BOOTSTRAP.md`/
+  `add-dependency.sh`), bricht es ab, ohne etwas zu verändern.
+- Eine echte `.devcontainer/.env` des Template-Ordners (Token!) wird **nicht** mitkopiert,
+  nur `.env.example`. Ignoriert das Zielprojekt `.devcontainer/.env` nicht bereits per
+  Git, legt das Skript `.devcontainer/.gitignore` an.
+- Zum Schluss warnt es bei fehlenden `USER_UID`/`USER_GID` und gibt die nächsten Schritte
+  aus (Token, Start, Rebuild).
+
+Manuell entspricht das (ohne `.env` und mit anschließendem Schritt 2):
+
 ```bash
 cp -r /pfad/zu/bootstrap/.devcontainer mein-projekt/
-cp /pfad/zu/bootstrap/BOOTSTRAP.md mein-projekt/
-cp /pfad/zu/bootstrap/add-dependency.sh mein-projekt/
+rm -f mein-projekt/.devcontainer/.env
+cp /pfad/zu/bootstrap/{BOOTSTRAP.md,add-dependency.sh} mein-projekt/
 ```
 
 `add-dependency.sh` ist ein Host-Helfer und gehört ins Projekt-Wurzelverzeichnis (neben
@@ -70,7 +116,7 @@ Devcontainer-Compose übernehmen.
 
 ## Schritt 2 — Compose-Projektnamen setzen
 
-In `.devcontainer/docker-compose.yml` den Platzhalter `PROJEKTNAME-devcontainer` durch
+Entfällt bei Verwendung von `setup.sh`. Sonst in `.devcontainer/docker-compose.yml` den Platzhalter `PROJEKTNAME-devcontainer` durch
 einen projektspezifischen, eindeutigen Namen ersetzen:
 
 ```yaml

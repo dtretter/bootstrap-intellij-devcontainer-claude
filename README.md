@@ -11,6 +11,8 @@ Services in die Konfiguration ein — danach einmal neu bauen, fertig.
   Details zu jeder Konfigurationsdatei und Anbindung von IntelliJ IDEA per ACP.
 - **BOOTSTRAP.md** — Anweisungen für Claude selbst; wird ins Zielprojekt kopiert und dort
   von Claude abgearbeitet.
+- **setup.sh** — kopiert das Template in ein Projekt und setzt den Compose-Namen
+  (`./setup.sh <zielverzeichnis>`); bricht ab, wenn dort schon `.devcontainer/` existiert.
 - **dvc** — Host-Wrapper für die `devcontainer`-CLI. Einmalig nach `~/.local/bin/` legen;
   steuert danach in jedem Projekt den Container im aktuellen Verzeichnis (`dvc up`,
   `dvc sh`, `dvc re`, …). Muss – anders als die übrigen Skripte – *nicht* pro Projekt
@@ -53,17 +55,17 @@ automatisch ergänzt (z. B. `dvc up --build-no-cache`).
 
 ## Kurzablauf
 
-1. **Template ins Projekt kopieren** (die Skripte gehören ins Projekt-Wurzelverzeichnis,
-   neben `.devcontainer/`):
+1. **Template ins Projekt kopieren** — `setup.sh` kopiert `.devcontainer/` (ohne `.env`),
+   `BOOTSTRAP.md` und `add-dependency.sh` ins Projekt-Wurzelverzeichnis und bricht ab,
+   falls dort schon `.devcontainer/` existiert:
    ```bash
-   cp -r /pfad/zu/bootstrap/.devcontainer mein-projekt/
-   cp /pfad/zu/bootstrap/{BOOTSTRAP.md,add-dependency.sh} mein-projekt/
+   /pfad/zu/bootstrap/setup.sh mein-projekt
    ```
    (`dvc` liegt bereits global in `~/.local/bin/` und wird nicht mitkopiert.)
 
-2. **Compose-Namen setzen:** in `.devcontainer/docker-compose.yml` den Platzhalter
-   `PROJEKTNAME-devcontainer` durch einen eindeutigen Namen ersetzen — sonst kollidieren
-   mehrere Projekte in Containern und Volumes.
+2. **Compose-Namen setzen:** erledigt `setup.sh` (Vorgabe `<verzeichnisname>-devcontainer`,
+   abweichend per `setup.sh mein-projekt <name>`). Der Name muss eindeutig sein — sonst
+   kollidieren mehrere Projekte in Containern und Volumes.
 
 3. **Container starten:**
    ```bash
