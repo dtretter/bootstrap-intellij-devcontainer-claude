@@ -33,6 +33,12 @@ Alternativ (zsh: `~/.zshrc`) oder ohne Shell-Profil in `.devcontainer/.env` eint
 Details in [SETUP.md](SETUP.md#voraussetzungen). Fehlen die Variablen, wird **still**
 UID/GID 1000 verwendet.
 
+Optional für HTTPS mit echtem Zertifikat (`https://<projekt>.<domain>`, auch aus anderen
+Containern): [traefik-local-https](https://github.com/dtretter/traefik-local-https) auf dem
+Host einrichten (Traefik + Wildcard-DNS, nur Linux mit Docker Engine). Projekte bekommen
+dann zusätzlich eine zuschaltbare HTTPS-Variante — Details in
+[SETUP.md](SETUP.md#voraussetzungen).
+
 Empfohlen: das mitgelieferte `dvc`-Skript einmalig nach `~/.local/bin/` legen (muss in
 `$PATH` sein). Es kürzt die `devcontainer`-Aufrufe ab und steuert immer den Container im
 aktuellen Verzeichnis:
@@ -52,6 +58,11 @@ install -m755 dvc ~/.local/bin/dvc
 
 Weitere Argumente werden an `devcontainer` durchgereicht, `--workspace-folder .` wird
 automatisch ergänzt (z. B. `dvc up --build-no-cache`).
+
+Gibt es im Projekt weitere Konfigurationen unter `.devcontainer/<name>/devcontainer.json`,
+wählt `dvc -c <name> …` sie aus; `dvc -c default …` erzwingt die Standardkonfiguration.
+Ohne `-c` gilt `DVC_CONFIG`, sonst `https`, falls vorhanden (zuschaltbare HTTPS-Variante
+über [traefik-local-https](https://github.com/dtretter/traefik-local-https), siehe SETUP.md).
 
 ## Kurzablauf
 

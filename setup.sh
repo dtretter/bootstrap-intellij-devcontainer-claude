@@ -147,4 +147,9 @@ Nächste Schritte:
      dvc up --build-no-cache
 
 4. .devcontainer/ einchecken (ohne .env), BOOTSTRAP.md löschen.
+
+Optional HTTPS (https://<projekt>.<domain>): Mit https://github.com/dtretter/traefik-local-https
+auf dem Host vor Schritt 2 DEV_HTTPS_DOMAIN in .devcontainer/.env eintragen. Claude fragt
+vor der Analyse, ob zusätzlich .devcontainer/https/ angelegt werden soll (Empfehlung: ja;
+dvc nimmt sie dann automatisch, ohne Traefik: dvc -c default).
 EOF

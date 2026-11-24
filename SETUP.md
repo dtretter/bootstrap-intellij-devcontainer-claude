@@ -73,6 +73,14 @@ dvc sh -c id                 # im Container, uid/gid von dev
 
 Da UID/GID beim Image-Build eingebrannt werden, greift eine Änderung erst nach `dvc re`.
 
+**Optional — lokales HTTPS:** Für die zuschaltbare HTTPS-Variante (siehe Schritt 4) muss auf
+dem Host [traefik-local-https](https://github.com/dtretter/traefik-local-https) eingerichtet
+sein und laufen: Traefik mit Let's-Encrypt-Wildcard-Zertifikat per DNS-01-Challenge plus
+Wildcard-DNS für Host und Container. Voraussetzungen laut Anleitung dort: Linux mit Docker
+Engine und systemd-resolved (kein Docker Desktop) sowie eine eigene (Sub-)Domain mit
+API-Zugang beim DNS-Provider. Ohne dieses Setup die Standardkonfiguration verwenden
+(`dvc -c default …`).
+
 ## Schritt 1 — Template ins Projekt kopieren
 
 Das Skript `setup.sh` (im `bootstrap`-Ordner, läuft auf dem Host) erledigt Schritt 1 und 2:
@@ -193,6 +201,17 @@ Beim ersten Start den Login-Flow durchführen; das Token landet im isolierten
 `claude-config`-Volume, nicht im Host-Home. Dieser Weg benötigt die OAuth-Hosts in der
 Firewall (siehe Schritt 3) und ist auf einen funktionierenden Token-Refresh angewiesen.
 
+**Optional: HTTPS-Variante.** Läuft auf dem Host
+[traefik-local-https](https://github.com/dtretter/traefik-local-https), vor dem Bootstrap
+`DEV_HTTPS_DOMAIN` in `.devcontainer/.env` eintragen (Vorlage in `.env.example`). Claude
+fragt vor der Analyse, ob die HTTPS-Variante angelegt werden soll (Empfehlung: ja). Bei
+„Ja" legt Claude **zusätzlich** zur Standardkonfiguration
+`.devcontainer/https/devcontainer.json` und `.devcontainer/docker-compose.https.yml` an
+(Traefik-Labels, Wildcard-DNS, Firewall-Schalter `--dev-https`). Die Standardkonfiguration
+bleibt unverändert und läuft weiter ohne Traefik. `dvc` nimmt ohne `-c` automatisch die
+HTTPS-Variante, sobald sie existiert; ohne Traefik `dvc -c default up` oder dauerhaft
+`export DVC_CONFIG=default`.
+
 Claude Code lädt `BOOTSTRAP.md` **nicht** automatisch. Weise Claude nach dem Start explizit an:
 
 > Analysiere das Projekt wie in BOOTSTRAP.md beschrieben und passe die Devcontainer-Konfiguration an.
@@ -207,6 +226,7 @@ Template-Dateien sowie die `CLAUDE.md` an:
 | `docker-compose.yml` | Services (DB, Cache, …), Umgebungsvariablen |
 | `devcontainer.json` | weitere `postCreateCommand`-Einträge (neben `claude-onboarding`), `forwardPorts` |
 | `init-firewall.sh` | Firewall-Regeln für interne Services; OAuth-Hosts entfernen, wenn per Setup-Token authentifiziert |
+| `https/devcontainer.json`, `docker-compose.https.yml` | nur bei Bedarf: zuschaltbare HTTPS-Variante über den Host-Traefik |
 | `CLAUDE.md` (Projektwurzel) | Abschnitt zu Firewall/`WebFetch` — neu angelegt oder nur dieser Abschnitt aktualisiert |
 
 Claude führt dabei **keine Builds oder Installationen** aus — nur Konfigurationsdateien
